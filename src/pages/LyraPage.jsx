@@ -1,22 +1,20 @@
-import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
-import Navbar from "../components/Navbar.jsx";
-import ReactMarkdown from "react-markdown"; // For nice formatting
+import { useState, useRef, useEffect } from 'react';
+import Navbar from '../components/Navbar.jsx';
+import ReactMarkdown from 'react-markdown';
 
 export default function LyraPage() {
   const [messages, setMessages] = useState([
     {
-      role: "assistant",
-      content:
-        "Greetings, dear poet, I'm Lyra the Muse,\nReady to rhyme and your verses peruse.\nShare your creation, or chat as you please—\nI'll weave words in rhythm with effortless ease! ✨",
+      role: 'assistant',
+      content: "Greetings, dear poet! I'm Lyra the Muse ✨\nReady to rhyme, review, or simply amuse.\nShare your verses or chat as you please—\nI'll weave words in rhythm with effortless ease!",
     },
   ]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -28,80 +26,71 @@ export default function LyraPage() {
     if (!input.trim() || isLoading) return;
 
     const userMessage = input.trim();
-    setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
+    setInput('');
+    setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
-    // ===== MOCK RESPONSE (delete this block when you add real API) =====
+    // MOCK RESPONSE (delete this setTimeout block when you add real API)
     setTimeout(() => {
       setMessages((prev) => [
         ...prev,
         {
-          role: "assistant",
-          content: `Oh lovely lines you've shared with me today,\nYour words dance freely in a charming way!\nThe rhythm flows like rivers to the sea,\nA solid 8/10 — keep writing wild and free! 📝\n\nThis reminds me of Pablo Neruda's fire,\nPassionate imagery that lifts us higher.\nTry adding more sensory delight,\nSmells and touches to ignite the night.\n\nBook rec: "Twenty Love Poems and a Song of Despair" by Neruda — pure magic!`,
+          role: 'assistant',
+          content: `Your words flow beautifully, friend—full of heart and grace!\nI'd rate this gem an 8.5/10, with passion in every space.\n\nStrengths: Vivid imagery that paints the soul's deep night.\nWeaknesses: A few lines could tighten for sharper bite.\n\nYour style echoes Pablo Neruda's fiery embrace—\nTry adding sensory touches to elevate the chase!\n\nBook rec: "Twenty Love Poems and a Song of Despair" by Neruda. Pure fire ❤️`,
         },
       ]);
       setIsLoading(false);
-    }, 1500);
-    // ===== END MOCK =====
-
-    // ===== REAL GROK API (uncomment when ready) =====
-    // try {
-    //   const res = await fetch('https://api.x.ai/v1/chat/completions', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //       'Authorization': `Bearer ${import.meta.env.VITE_GROK_API_KEY}`,
-    //     },
-    //     body: JSON.stringify({
-    //       model: 'grok-4',  // or 'grok-3' depending on your access
-    //       messages: [
-    //         { role: 'system', content: systemPrompt },  // We'll define this below
-    //         ...messages.map(m => ({ role: m.role, content: m.content })),
-    //         { role: 'user', content: userMessage }
-    //       ],
-    //       temperature: 0.8,
-    //       max_tokens: 1000,
-    //     }),
-    //   });
-    //
-    //   const data = await res.json();
-    //   const assistantMessage = data.choices[0].message.content;
-    //
-    //   setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
-    // } catch (err) {
-    //   setMessages(prev => [...prev, { role: 'assistant', content: 'Oops, my muse powers flickered... Try again?' }]);
-    // } finally {
-    //   setIsLoading(false);
-    // }
-    // ===== END REAL =====
+    }, 1800);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50 dark:from-slate-900 dark:to-gray-900 flex flex-col">
       <Navbar />
 
-      <div className="flex-1 max-w-4xl mx-auto w-full px-6 py-8 flex flex-col">
-        <h1 className="text-4xl font-bold text-center text-purple-700 dark:text-purple-400 font-serif mb-8">
-          Chat with Lyra the Muse
+      {/* Chat Container */}
+      <div className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 flex flex-col">
+        <h1 className="text-4xl font-bold text-center text-purple-700 dark:text-purple-400 font-serif mb-6">
+          Lyra the Muse
         </h1>
 
-        <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        {/* Messages Area */}
+        <div className="flex-1 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-thin scrollbar-thumb-purple-300 dark:scrollbar-thumb-purple-600">
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`flex ${
-                  msg.role === "user" ? "justify-end" : "justify-start"
-                }`}
+                className={`flex items-start gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
               >
+                {/* Avatar */}
+                <div className="shrink-0">
+                  {msg.role === 'assistant' ? (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                      L
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                      Y
+                    </div>
+                  )}
+                </div>
+
+                {/* Bubble */}
                 <div
-                  className={`max-w-lg px-6 py-4 rounded-2xl shadow-md ${
-                    msg.role === "user"
-                      ? "bg-purple-600 text-white"
-                      : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className={`max-w-md px-6 py-4 rounded-3xl shadow-md relative ${
+                    msg.role === 'user'
+                      ? 'bg-purple-600 text-white rounded-tr-none'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-tl-none'
                   }`}
                 >
+                  {/* Tail */}
+                  <div
+                    className={`absolute top-0 w-4 h-4 ${
+                      msg.role === 'user'
+                        ? 'right-0 -translate-x-1/2 bg-purple-600'
+                        : 'left-0 translate-x-1/2 bg-gray-100 dark:bg-gray-700'
+                    } rotate-45`}
+                  ></div>
+
                   <div className="prose prose-sm dark:prose-invert max-w-none">
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
                   </div>
@@ -109,29 +98,34 @@ export default function LyraPage() {
               </div>
             ))}
 
+            {/* Typing Indicator */}
             {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 dark:bg-gray-700 px-6 py-4 rounded-2xl shadow-md">
-                  <span className="text-gray-500">
-                    Lyra is weaving words...
-                  </span>
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                  L
+                </div>
+                <div className="bg-gray-100 dark:bg-gray-700 px-6 py-4 rounded-3xl rounded-tl-none shadow-md">
+                  <div className="flex gap-2">
+                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce delay-100" />
+                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce delay-200" />
+                  </div>
                 </div>
               </div>
             )}
+
             <div ref={messagesEndRef} />
           </div>
 
-          <form
-            onSubmit={handleSubmit}
-            className="p-6 border-t dark:border-gray-700"
-          >
+          {/* Input Area */}
+          <form onSubmit={handleSubmit} className="p-6 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
             <div className="flex gap-4">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Share a poem for review, or just chat in rhyme..."
-                className="flex-1 px-6 py-4 rounded-full border-2 border-purple-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-purple-600 dark:focus:border-purple-400"
+                className="flex-1 px-6 py-4 rounded-full border-2 border-purple-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 shadow-inner"
               />
               <button
                 type="submit"
