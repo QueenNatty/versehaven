@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Navbar from '../components/Navbar.jsx';
 import ReactMarkdown from 'react-markdown';
+import { useLocation } from 'react-router-dom';
 
 export default function LyraPage() {
   const [messages, setMessages] = useState([
@@ -12,6 +13,42 @@ export default function LyraPage() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+
+const location = useLocation();
+const poemToReview = location.state?.poemToReview;
+
+// Use a ref to track if we've already auto-sent — survives re-renders, resets on mount
+const hasAutoSentRef = useRef(false);
+
+useEffect(() => {
+  // Reset on every mount (fresh load)
+  hasAutoSentRef.current = false;
+}, []); // Empty dependency = only on mount
+
+useEffect(() => {
+  if (poemToReview && !hasAutoSentRef.current) {
+    // Defer to avoid any render cycle flakiness
+    requestAnimationFrame(() => {
+      if (messages.length === 1) {
+        setMessages(prev => [
+          ...prev,
+          { role: 'user', content: `Please review this poem:\n\n${poemToReview}` }
+        ]);
+        hasAutoSentRef.current = true;
+        setIsLoading(true);
+
+        // MOCK response
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `Ah, what a delightful piece you've brought to me!\nLet Lyra weave her thoughts in poetry...\n\nRating: 9/10 — strong emotion and flow.\nStrengths: Beautiful rhythm and vivid imagery that glows.\nWeaknesses: One or two lines could be tighter, less loose—\nBut overall, this poem is one to choose!\n\nYour style has echoes of Maya Angelou's grace,\nWith personal truth shining on every face.\n\nBook recommendation: "I Know Why the Caged Bird Sings" — feel the power!`,
+          }]);
+          setIsLoading(false);
+        }, 2000);
+      }
+    });
+  }
+}, [poemToReview]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,6 +79,8 @@ export default function LyraPage() {
       setIsLoading(false);
     }, 1800);
   };
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50 dark:from-slate-900 dark:to-gray-900 flex flex-col">

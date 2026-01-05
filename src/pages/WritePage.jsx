@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar.jsx";
-import { usePoems } from "../context/PoemsContext.jsx";
+import { usePoems } from "../context/usePoems.jsx"; // This one is actually correct!
 
 export default function WritePage() {
   const [title, setTitle] = useState("");
   const [poem, setPoem] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { addPoem } = usePoems();
 
@@ -65,10 +64,9 @@ export default function WritePage() {
 
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-purple-700 dark:bg-purple-600 text-white py-5 rounded-xl text-xl font-medium hover:bg-purple-800 dark:hover:bg-purple-500 transition shadow-lg disabled:opacity-70"
+              className="w-full bg-purple-700 dark:bg-purple-600 text-white py-5 rounded-xl text-xl font-medium hover:bg-purple-800 dark:hover:bg-purple-500 transition shadow-lg"
             >
-              {isSubmitting ? "Posting..." : "Post Poem to VerseHaven"}
+              Post Poem to VerseHaven
             </button>
           </div>
 

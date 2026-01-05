@@ -1,4 +1,5 @@
-import { usePoems } from './context/PoemsContext.jsx';  // Add at top
+import { Link } from 'react-router-dom';
+import {usePoems} from "./context/usePoems.jsx";
 import Navbar from './components/Navbar.jsx';
 
 function App() {
@@ -42,19 +43,28 @@ function App() {
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
       {poems.map((poem) => (
         <div
-          key={poem.id}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 hover:shadow-2xl dark:hover:shadow-purple-900/50 transition transform hover:-translate-y-2"
-        >
-          <h4 className="text-2xl font-serif font-semibold text-purple-700 dark:text-purple-400 mb-4">
-            {poem.title}
-          </h4>
-          <pre className="text-gray-700 dark:text-gray-300 italic leading-relaxed font-light whitespace-pre-wrap">
-            {poem.content}
-          </pre>
-          <p className="text-sm text-gray-500 dark:text-gray-500 mt-8 text-right">
-            — {poem.author}
-          </p>
-        </div>
+  key={poem.id}
+  className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 hover:shadow-2xl dark:hover:shadow-purple-900/50 transition transform hover:-translate-y-2 flex flex-col"
+>
+  <h4 className="text-2xl font-serif font-semibold text-purple-700 dark:text-purple-400 mb-4">
+    {poem.title}
+  </h4>
+  <pre className="text-gray-700 dark:text-gray-300 italic leading-relaxed font-light whitespace-pre-wrap flex-1">
+    {poem.content}
+  </pre>
+  <div className="mt-8 flex justify-between items-center">
+    <p className="text-sm text-gray-500 dark:text-gray-500 italic">
+      — {poem.author}
+    </p>
+    <Link
+      to="/lyra"
+      state={{ poemToReview: `${poem.title}\n\n${poem.content}` }}
+      className="bg-purple-600 dark:bg-purple-700 text-white px-6 py-3 rounded-full font-medium hover:bg-purple-700 dark:hover:bg-purple-600 transition shadow-md"
+    >
+      Ask Lyra to Review
+    </Link>
+  </div>
+</div>
       ))}
     </div>
   )}

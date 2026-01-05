@@ -1,33 +1,32 @@
-import { useState, useEffect } from 'react'
-import { Sun, Moon } from 'lucide-react'  // We'll install icons next
+import { useState, useEffect } from 'react';
+import { Sun, Moon } from 'lucide-react';
 
 export default function DarkModeToggle() {
-  const [isDark, setIsDark] = useState(false)
-
-  useEffect(() => {
-    // Check saved preference or system preference on load
-    const saved = localStorage.getItem('darkMode')
-    if (saved) {
-      setIsDark(saved === 'true')
-    } else {
-      setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches)
+  // Initialize correctly on first render — no extra render needed!
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    if (saved !== null) {
+      return saved === 'true';
     }
-  }, [])
+    // Fall back to system preference
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
 
+  // Only handle applying the class + saving when it actually changes
   useEffect(() => {
-    // Apply 'dark' class to <html> and save preference
     if (isDark) {
-      document.documentElement.classList.add('dark')
-      localStorage.setItem('darkMode', 'true')
+      document.documentElement.classList.add('dark');
     } else {
-      document.documentElement.classList.remove('dark')
-      localStorage.setItem('darkMode', 'false')
+      document.documentElement.classList.remove('dark');
     }
-  }, [isDark])
+    localStorage.setItem('darkMode', isDark.toString());
+  }, [isDark]);
+
+  const toggle = () => setIsDark(prev => !prev);
 
   return (
     <button
-      onClick={() => setIsDark(!isDark)}
+      onClick={toggle}
       className="p-3 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition shadow-md"
       aria-label="Toggle dark mode"
     >
@@ -37,5 +36,5 @@ export default function DarkModeToggle() {
         <Moon className="w-5 h-5 text-gray-800" />
       )}
     </button>
-  )
+  );
 }
