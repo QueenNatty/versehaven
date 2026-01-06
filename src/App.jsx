@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import {usePoems} from "./context/usePoems.jsx";
-import Navbar from './components/Navbar.jsx';
+import {usePoems} from "@/context/usePoems.jsx";
+import Navbar from '@/components/Navbar.jsx';
 
 function App() {
 

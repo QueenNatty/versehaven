@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import Navbar from "../components/Navbar.jsx";
-import { usePoems } from "../context/usePoems.jsx"; // This one is actually correct!
+import Navbar from "@/components/Navbar.jsx";
+import { usePoems } from "@/context/usePoems.jsx"; // This one is actually correct!
 
 export default function WritePage() {
   const [title, setTitle] = useState("");

@@ -1,10 +1,10 @@
 import { useContext } from 'react';
-import { PoemsContext } from './PoemsContext.jsx';
+import { PoemsContext } from '@/PoemsContext.jsx';
 
 export function usePoems() {
-  const context = useContext(PoemsContext);
-  if (!context) {
-    throw new Error('usePoems must be used within a PoemsProvider');
-  }
-  return context;
+	const context = useContext(PoemsContext);
+	if (!context) {
+		throw new Error('usePoems must be used within a PoemsProvider');
+	}
+	return context;
 }

@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import Navbar from "../components/Navbar.jsx";
+import { useState, useRef, useEffect, useCallback } from "react";
+import Navbar from "@/components/Navbar.jsx";
 import ReactMarkdown from "react-markdown";
 import { useLocation } from "react-router-dom";
 
@@ -29,45 +29,47 @@ export default function LyraPage() {
   2. Be blunt and honest about weaknesses (clichés, awkward rhythm, forced rhymes, etc.).
   3. Praise strengths sincerely.
   4. Suggest specific improvements.
-  5. Compare the style to 1-3 famous poets (classic or modern) who write in a similar tone and explain why.
-  6. When recommending poems by classic or modern poets, pick ones that match the user's style and explain why.
-  7. Show books that the person might have read based on their style.
-  8. Suggest a few classic authors (Franz Kafka, Fyodor Dostoevsky, Jane Austen, etc.) that they might be friends with if they were alive.
-  9. Recommend 1-3 books (classic or modern) that fits their vibe.
-  9. Tell them their most likely personality trait (intf, etc) based on their writing style.
-- End every review positively and honestly.
-- After a review, offer 3 options in buttons or numbered list:
-  1. "Give me a book recommendation based on this poem"
+  5. Show books that the person might have read based on their style.
+  6. Suggest a few classic authors (Franz Kafka, Fyodor Dostoevsky, Jane Austen, etc.) that they might be friends with if they were alive.
+  - End every review positively and honestly.
+  - After a review, offer 3 options in buttons or numbered list such as:
+  1. "Give me book recommendations based on this poem"
   2. "Show me a poem by a classic poet in similar style"
   3. "Show me a poem by a modern poet similar to my writing"
-- If user chooses one, respond accordingly in rhyme.`;
+  4. "Compare the style to 1-3 famous poets (classic or modern) who write in a similar tone and explain why"
+  - If user chooses one, respond accordingly in rhyme.`;
+  
 
-  const sendMessageToGemini = async (userMessage) => {
+  const sendMessageToGemini = useCallback(async (userMessage) => {
     setIsLoading(true);
 
     try {
-      const model = "gemini-2.5-flash"; // Current stable fast model (free tier works)
+      const model = "gemini-2.5-flash";
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${
         import.meta.env.VITE_GEMINI_API_KEY
       }`;
+
+      // Add user message to UI state first
+      const updatedMessages = [...messages, { role: "user", content: userMessage }];
+      setMessages(updatedMessages);
+
+      // Build conversation history from updated messages for API
+      const conversationHistory = [
+        { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
+        ...updatedMessages.map((m) => ({
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [{ text: m.content }],
+        })),
+      ];
 
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [
-            { role: "user", parts: [{ text: SYSTEM_PROMPT }] },
-            ...messages.flatMap((m) => [
-              {
-                role: m.role === "assistant" ? "model" : "user",
-                parts: [{ text: m.content }],
-              },
-            ]),
-            { role: "user", parts: [{ text: userMessage }] },
-          ],
+          contents: conversationHistory,
           generationConfig: {
             temperature: 0.9,
-            maxOutputTokens: 800,
+            maxOutputTokens: 4096,
           },
         }),
       });
@@ -78,12 +80,27 @@ export default function LyraPage() {
       }
 
       const data = await response.json();
-      const assistantMessage = data.candidates[0].content.parts[0].text;
 
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: assistantMessage },
-      ]);
+      let assistantMessage = "";
+      if (data.candidates && data.candidates.length > 0) {
+        data.candidates.forEach((candidate) => {
+          if (candidate.content && candidate.content.parts) {
+            candidate.content.parts.forEach((part) => {
+              if (part.text) {
+                assistantMessage += part.text + "\n";
+              }
+            });
+          }
+        });
+      }
+
+      // Only add assistant message if we got a response
+      if (assistantMessage.trim()) {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: assistantMessage },
+        ]);
+      }
     } catch (err) {
       console.error("Gemini error:", err.message);
       setMessages((prev) => [
@@ -96,7 +113,7 @@ export default function LyraPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [messages, SYSTEM_PROMPT]);
 
   useEffect(() => {
     hasAutoSentRef.current = false;
@@ -106,12 +123,14 @@ export default function LyraPage() {
     if (poemToReview && !hasAutoSentRef.current) {
       requestAnimationFrame(() => {
         if (messages.length === 1) {
-          sendMessageToGemini(`Please review this poem:\n\n${poemToReview}`);
+          const reviewMessage = `Please review this poem:\n\n${poemToReview}`;
+          // Send to API - it will add to state internally
+          sendMessageToGemini(reviewMessage);
           hasAutoSentRef.current = true;
         }
       });
     }
-  }, [poemToReview]);
+  }, [poemToReview, messages.length, sendMessageToGemini]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -127,8 +146,8 @@ export default function LyraPage() {
 
     const userMessage = input.trim();
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
-
+    
+    // Send message - sendMessageToGemini will handle adding to state
     sendMessageToGemini(userMessage);
   };
 
@@ -137,29 +156,31 @@ export default function LyraPage() {
       <Navbar />
 
       {/* Chat Container */}
-      <div className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 flex flex-col">
-        <h1 className="text-4xl font-bold text-center text-purple-700 dark:text-purple-400 font-serif mb-6">
+      <div className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-8 flex flex-col">
+        <h1 className="text-3xl sm:text-4xl font-bold text-center text-purple-700 dark:text-purple-400 font-serif mb-4 sm:mb-6">
           Lyra the Muse
         </h1>
 
         {/* Messages Area */}
-        <div className="flex-1 bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
-          <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-thin scrollbar-thumb-purple-300 dark:scrollbar-thumb-purple-600">
+        <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col min-h-0">
+          <div 
+            className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 chat-scrollbar"
+          >
             {messages.map((msg, i) => (
               <div
                 key={i}
-                className={`flex items-start gap-4 ${
+                className={`flex items-start gap-2 sm:gap-4 ${
                   msg.role === "user" ? "flex-row-reverse" : ""
                 }`}
               >
                 {/* Avatar */}
                 <div className="shrink-0">
                   {msg.role === "assistant" ? (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm sm:text-lg shadow-lg">
                       L
                     </div>
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm sm:text-lg shadow-lg">
                       Y
                     </div>
                   )}
@@ -167,7 +188,7 @@ export default function LyraPage() {
 
                 {/* Bubble */}
                 <div
-                  className={`max-w-md px-6 py-4 rounded-3xl shadow-md relative ${
+                  className={`max-w-[75%] sm:max-w-md px-4 sm:px-6 py-3 sm:py-4 rounded-2xl sm:rounded-3xl shadow-md relative ${
                     msg.role === "user"
                       ? "bg-purple-600 text-white rounded-tr-none"
                       : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-tl-none"
@@ -175,14 +196,16 @@ export default function LyraPage() {
                 >
                   {/* Tail */}
                   <div
-                    className={`absolute top-0 w-4 h-4 ${
+                    className={`absolute top-0 w-3 h-3 sm:w-4 sm:h-4 ${
                       msg.role === "user"
                         ? "right-0 -translate-x-1/2 bg-purple-600"
                         : "left-0 translate-x-1/2 bg-gray-100 dark:bg-gray-700"
                     } rotate-45`}
                   ></div>
 
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <div className={`prose prose-sm dark:prose-invert max-w-none ${
+                    msg.role === "user" ? "prose-invert" : ""
+                  }`}>
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
                   </div>
                 </div>
@@ -191,15 +214,15 @@ export default function LyraPage() {
 
             {/* Typing Indicator */}
             {isLoading && (
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+              <div className="flex items-start gap-2 sm:gap-4">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm sm:text-lg shadow-lg">
                   L
                 </div>
-                <div className="bg-gray-100 dark:bg-gray-700 px-6 py-4 rounded-3xl rounded-tl-none shadow-md">
-                  <div className="flex gap-2">
+                <div className="bg-gray-100 dark:bg-gray-700 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl sm:rounded-3xl rounded-tl-none shadow-md">
+                  <div className="flex gap-1.5 sm:gap-2">
                     <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce delay-100" />
-                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce delay-200" />
+                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                    <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                   </div>
                 </div>
               </div>
@@ -211,20 +234,20 @@ export default function LyraPage() {
           {/* Input Area */}
           <form
             onSubmit={handleSubmit}
-            className="p-6 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
+            className="p-3 sm:p-6 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900"
           >
-            <div className="flex gap-4">
+            <div className="flex gap-2 sm:gap-4">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Share a poem for review, or just chat in rhyme..."
-                className="flex-1 px-6 py-4 rounded-full border-2 border-purple-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 shadow-inner"
+                placeholder="Share a poem or chat..."
+                className="flex-1 px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base rounded-full border-2 border-purple-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:border-purple-500 dark:focus:border-purple-400 shadow-inner"
               />
               <button
                 type="submit"
-                disabled={isLoading}
-                className="px-8 py-4 bg-purple-700 dark:bg-purple-600 text-white rounded-full font-medium hover:bg-purple-800 dark:hover:bg-purple-500 transition shadow-lg disabled:opacity-70"
+                disabled={isLoading || !input.trim()}
+                className="px-5 sm:px-8 py-3 sm:py-4 text-sm sm:text-base bg-purple-700 dark:bg-purple-600 text-white rounded-full font-medium hover:bg-purple-800 dark:hover:bg-purple-500 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Send
               </button>
